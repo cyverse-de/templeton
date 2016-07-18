@@ -2,12 +2,12 @@ package elasticsearch
 
 import (
 	"fmt"
-	"logcabin"
 
+	"github.com/cyverse-de/logcabin"
 	"gopkg.in/olivere/elastic.v3"
 
-	"templeton/database"
-	"templeton/model"
+	"github.com/cyverse-de/templeton/database"
+	"github.com/cyverse-de/templeton/model"
 )
 
 var (
