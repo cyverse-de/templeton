@@ -2,18 +2,18 @@ package main
 
 import (
 	"flag"
-	"logcabin"
-	"messaging"
 
-	"configurate"
 	"encoding/json"
 	"fmt"
 	"os"
 
-	"templeton/database"
-	"templeton/elasticsearch"
-	"templeton/model"
+	"github.com/cyverse-de/templeton/database"
+	"github.com/cyverse-de/templeton/elasticsearch"
+	"github.com/cyverse-de/templeton/model"
 
+	"github.com/cyverse-de/configurate"
+	"github.com/cyverse-de/logcabin"
+	"github.com/cyverse-de/messaging"
 	"github.com/olebedev/config"
 	"github.com/streadway/amqp"
 )

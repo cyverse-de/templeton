@@ -1,14 +1,14 @@
 package database
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 
-	"logcabin"
+	"database/sql"
 
-	"templeton/model"
+	"github.com/cyverse-de/templeton/model"
 
+	"github.com/cyverse-de/logcabin"
 	_ "github.com/lib/pq"
 )
 
