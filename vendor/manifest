@@ -34,6 +34,14 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/cyverse-de/version",
+			"repository": "https://github.com/cyverse-de/version",
+			"vcs": "git",
+			"revision": "4c854098050bf9d6e51ed16a8862caab921c8a06",
+			"branch": "master",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/lib/pq",
 			"repository": "https://github.com/lib/pq",
 			"vcs": "git",
