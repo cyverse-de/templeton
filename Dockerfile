@@ -1,15 +1,11 @@
-FROM jeanblanchard/alpine-glibc
-
-ADD templeton /bin/templeton
+FROM golang:1.6-alpine
 
 ARG git_commit=unknown
-ARG buildenv_git_commit=unknown
-ARG version=unknown
-LABEL org.iplantc.de.templeton.git-ref="$git_commit" \
-      org.iplantc.de.templeton.version="$version" \
-      org.iplantc.de.buildenv.git-ref="$buildenv_git_commit"
+LABEL org.cyverse.git-ref="$git_commit"
+
+COPY . /go/src/github.com/cyverse-de/templeton
+RUN go install github.com/cyverse-de/templeton
 
 EXPOSE 60000
 ENTRYPOINT ["templeton"]
 CMD ["--help"]
-
