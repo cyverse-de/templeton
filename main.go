@@ -2,8 +2,11 @@ package main
 
 import (
 	"flag"
+	"net"
+	"net/http"
 
 	"encoding/json"
+	_ "expvar"
 	"fmt"
 	"os"
 
@@ -146,6 +149,16 @@ func doIncrementalMode(es *elasticsearch.Elasticer, d *database.Databaser, clien
 	spin()
 }
 
+func exportVars() {
+	go func() {
+		sock, err := net.Listen("tcp", "0.0.0.0:60000")
+		if err != nil {
+			logcabin.Error.Fatal(err)
+		}
+		http.Serve(sock, nil)
+	}()
+}
+
 func main() {
 	if *showVersion {
 		version.AppVersion()
@@ -186,6 +199,8 @@ func main() {
 		logcabin.Error.Fatal(err)
 	}
 	defer client.Close()
+
+	exportVars()
 
 	if *mode == "periodic" {
 		doPeriodicMode(es, d, client)
