@@ -2,8 +2,11 @@ package main
 
 import (
 	"flag"
+	"net"
+	"net/http"
 
 	"encoding/json"
+	_ "expvar"
 	"fmt"
 	"os"
 
@@ -22,6 +25,7 @@ import (
 var (
 	showVersion        = flag.Bool("version", false, "Print version information")
 	mode               = flag.String("mode", "", "One of 'periodic', 'incremental', or 'full'. Required except for --version.")
+	debugPort          = flag.String("debug-port", "60000", "Listen port for requests to /debug/vars.")
 	cfgPath            = flag.String("config", "", "Path to the configuration file. Required except for --version.")
 	amqpURI            string
 	elasticsearchBase  string
@@ -146,6 +150,16 @@ func doIncrementalMode(es *elasticsearch.Elasticer, d *database.Databaser, clien
 	spin()
 }
 
+func exportVars(port string) {
+	go func() {
+		sock, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", port))
+		if err != nil {
+			logcabin.Error.Fatal(err)
+		}
+		http.Serve(sock, nil)
+	}()
+}
+
 func main() {
 	if *showVersion {
 		version.AppVersion()
@@ -186,6 +200,8 @@ func main() {
 		logcabin.Error.Fatal(err)
 	}
 	defer client.Close()
+
+	exportVars(*debugPort)
 
 	if *mode == "periodic" {
 		doPeriodicMode(es, d, client)
