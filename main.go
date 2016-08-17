@@ -13,7 +13,6 @@ import (
 	"github.com/cyverse-de/templeton/database"
 	"github.com/cyverse-de/templeton/elasticsearch"
 	"github.com/cyverse-de/templeton/model"
-	"github.com/cyverse-de/version"
 
 	"github.com/cyverse-de/configurate"
 	"github.com/cyverse-de/logcabin"
@@ -160,9 +159,28 @@ func exportVars(port string) {
 	}()
 }
 
+var (
+	gitref  string
+	appver  string
+	builtby string
+)
+
+// AppVersion prints the version information to stdout
+func AppVersion() {
+	if appver != "" {
+		fmt.Printf("App-Version: %s\n", appver)
+	}
+	if gitref != "" {
+		fmt.Printf("Git-Ref: %s\n", gitref)
+	}
+	if builtby != "" {
+		fmt.Printf("Built-By: %s\n", builtby)
+	}
+}
+
 func main() {
 	if *showVersion {
-		version.AppVersion()
+		AppVersion()
 		os.Exit(0)
 	}
 
