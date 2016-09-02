@@ -22,7 +22,7 @@
 			"importpath": "github.com/cyverse-de/configurate",
 			"repository": "https://github.com/cyverse-de/configurate",
 			"vcs": "git",
-			"revision": "556dd65830fe6096b26638302b1f055cdd003221",
+			"revision": "4b85e07b4aea9377eebe7ce7ee9efff574751ab4",
 			"branch": "master",
 			"notests": true
 		},
@@ -46,7 +46,7 @@
 			"importpath": "github.com/cyverse-de/model",
 			"repository": "https://github.com/cyverse-de/model",
 			"vcs": "git",
-			"revision": "144746393fcd6d7e06d74605abc0089534544e59",
+			"revision": "433e08f9889d83a5f39c23675b884cbc0b2cda14",
 			"branch": "master",
 			"notests": true
 		},
@@ -103,14 +103,6 @@
 			"repository": "https://github.com/mitchellh/mapstructure",
 			"vcs": "git",
 			"revision": "ca63d7c062ee3c9f34db231e352b60012b4fd0c1",
-			"branch": "master",
-			"notests": true
-		},
-		{
-			"importpath": "github.com/olebedev/config",
-			"repository": "https://github.com/olebedev/config",
-			"vcs": "git",
-			"revision": "dd1049a3738432dfc49417e2ae5bd97e132ecac6",
 			"branch": "master",
 			"notests": true
 		},

@@ -17,9 +17,21 @@ import (
 	"github.com/cyverse-de/configurate"
 	"github.com/cyverse-de/logcabin"
 	"github.com/cyverse-de/messaging"
-	"github.com/olebedev/config"
+	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
 )
+
+const defaultConfig = `
+amqp:
+  uri: amqp://guest:guest@rabbit:5672/
+
+elasticsearch:
+  base: http://elasticsearch:9200
+  index: data
+
+db:
+  uri: postgres://de:notprod@dedb:5432/metadata?sslmode=disable
+`
 
 var (
 	showVersion        = flag.Bool("version", false, "Print version information")
@@ -30,7 +42,7 @@ var (
 	elasticsearchBase  string
 	elasticsearchIndex string
 	dbURI              string
-	cfg                *config.Config
+	cfg                *viper.Viper
 )
 
 func init() {
@@ -57,38 +69,23 @@ func checkMode() {
 
 func initConfig(cfgPath string) {
 	var err error
-	cfg, err = configurate.Init(cfgPath)
+	cfg, err = configurate.InitDefaults(cfgPath, defaultConfig)
 	if err != nil {
 		logcabin.Error.Fatal(err)
 	}
 }
 
 func loadElasticsearchConfig() {
-	var err error
-	elasticsearchBase, err = cfg.String("elasticsearch.base")
-	if err != nil {
-		logcabin.Error.Fatal(err)
-	}
-	elasticsearchIndex, err = cfg.String("elasticsearch.index")
-	if err != nil {
-		logcabin.Error.Fatal(err)
-	}
+	elasticsearchBase = cfg.GetString("elasticsearch.base")
+	elasticsearchIndex = cfg.GetString("elasticsearch.index")
 }
 
 func loadAMQPConfig() {
-	var err error
-	amqpURI, err = cfg.String("amqp.uri")
-	if err != nil {
-		logcabin.Error.Fatal(err)
-	}
+	amqpURI = cfg.GetString("amqp.uri")
 }
 
 func loadDBConfig() {
-	var err error
-	dbURI, err = cfg.String("db.uri")
-	if err != nil {
-		logcabin.Error.Fatal(err)
-	}
+	dbURI = cfg.GetString("db.uri")
 }
 
 func doFullMode(es *elasticsearch.Elasticer, d *database.Databaser) {
