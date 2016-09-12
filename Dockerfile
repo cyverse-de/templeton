@@ -1,4 +1,4 @@
-FROM golang:1.6-alpine
+FROM golang:1.7-alpine
 
 ARG git_commit=unknown
 ARG version="5.2.8.0"
