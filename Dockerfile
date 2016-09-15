@@ -1,7 +1,7 @@
 FROM golang:1.7-alpine
 
 ARG git_commit=unknown
-ARG version="5.2.8.0"
+ARG version="2.9.0"
 
 LABEL org.cyverse.git-ref="$git_commit"
 LABEL org.cyverse.version="$version"
