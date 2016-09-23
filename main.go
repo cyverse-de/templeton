@@ -39,6 +39,8 @@ var (
 	debugPort          = flag.String("debug-port", "60000", "Listen port for requests to /debug/vars.")
 	cfgPath            = flag.String("config", "", "Path to the configuration file. Required except for --version.")
 	amqpURI            string
+	amqpExchangeName   string
+	amqpExchangeType   string
 	elasticsearchBase  string
 	elasticsearchIndex string
 	dbURI              string
@@ -82,6 +84,8 @@ func loadElasticsearchConfig() {
 
 func loadAMQPConfig() {
 	amqpURI = cfg.GetString("amqp.uri")
+	amqpExchangeName = cfg.GetString("amqp.exchange.name")
+	amqpExchangeType = cfg.GetString("amqp.exchange.type")
 }
 
 func loadDBConfig() {
@@ -113,11 +117,13 @@ func doPeriodicMode(es *elasticsearch.Elasticer, d *database.Databaser, client *
 
 	// Accept and handle messages sent out with the index.all and index.templates routing keys
 	client.AddConsumerMulti(
-		messaging.ReindexExchange,
-		"direct",
+		amqpExchangeName,
+		amqpExchangeType,
 		"templeton.periodic",
 		[]string{messaging.ReindexAllKey, messaging.ReindexTemplatesKey},
 		func(del amqp.Delivery) {
+			logcabin.Info.Printf("Recieved message: [%s] [%s]", del.RoutingKey, del.Body)
+
 			es.Reindex(d)
 			del.Ack(false)
 		})
@@ -130,18 +136,23 @@ func doIncrementalMode(es *elasticsearch.Elasticer, d *database.Databaser, clien
 
 	go client.Listen()
 
-	client.AddConsumer(messaging.IncrementalExchange, "direct", "templeton.incremental", messaging.IncrementalKey, func(del amqp.Delivery) {
-		logcabin.Info.Printf("Recieved message: [%s] [%s]", del.RoutingKey, del.Body)
+	client.AddConsumer(
+		amqpExchangeName,
+		amqpExchangeType,
+		"templeton.incremental",
+		messaging.IncrementalKey,
+		func(del amqp.Delivery) {
+			logcabin.Info.Printf("Recieved message: [%s] [%s]", del.RoutingKey, del.Body)
 
-		var m model.UpdateMessage
-		err := json.Unmarshal(del.Body, &m)
-		if err != nil {
-			logcabin.Error.Print(err)
-			del.Reject(!del.Redelivered)
-		}
-		es.IndexOne(d, m.ID)
-		del.Ack(false)
-	})
+			var m model.UpdateMessage
+			err := json.Unmarshal(del.Body, &m)
+			if err != nil {
+				logcabin.Error.Print(err)
+				del.Reject(!del.Redelivered)
+			}
+			es.IndexOne(d, m.ID)
+			del.Ack(false)
+		})
 
 	spin()
 }
