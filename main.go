@@ -13,6 +13,7 @@ import (
 	"github.com/cyverse-de/templeton/database"
 	"github.com/cyverse-de/templeton/elasticsearch"
 	"github.com/cyverse-de/templeton/model"
+	"github.com/johnworth/events/ping"
 
 	"github.com/cyverse-de/configurate"
 	"github.com/cyverse-de/logcabin"
@@ -153,6 +154,51 @@ func doIncrementalMode(es *elasticsearch.Elasticer, d *database.Databaser, clien
 	spin()
 }
 
+func handlePing(client *messaging.Client, delivery amqp.Delivery, mode string) {
+	logcabin.Info.Println("Received ping")
+
+	pongKey := fmt.Sprintf("events.templeton.%s.pong", mode)
+
+	out, err := json.Marshal(&ping.Pong{
+		PongFrom: fmt.Sprintf("templeton-%s", mode),
+	})
+	if err != nil {
+		logcabin.Error.Print(err)
+	}
+
+	logcabin.Info.Println("Sent pong")
+
+	if err = client.Publish(pongKey, out); err != nil {
+		logcabin.Error.Print(err)
+	}
+}
+
+func listenForEvents(client *messaging.Client, mode string) {
+	logcabin.Info.Println("Setting up support for events")
+
+	eventsKey := fmt.Sprintf("events.templeton.%s.#", mode)
+	pingKey := fmt.Sprintf("events.templeton.%s.ping", mode)
+
+	client.SetupPublishing(amqpExchangeName)
+
+	client.AddConsumer(
+		amqpExchangeName,
+		amqpExchangeType,
+		fmt.Sprintf("events.templeton.%s.queue", mode),
+		eventsKey,
+		func(delivery amqp.Delivery) {
+			delivery.Ack(false)
+			logcabin.Info.Printf("Received event message: [%s] [%s]", delivery.RoutingKey, delivery.Body)
+			switch delivery.RoutingKey {
+			case pingKey:
+				handlePing(client, delivery, mode)
+			default:
+				logcabin.Info.Printf("No handler for message: [%s] [%s]", delivery.RoutingKey, delivery.Body)
+			}
+		},
+	)
+}
+
 func exportVars(port string) {
 	go func() {
 		sock, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", port))
@@ -226,6 +272,8 @@ func main() {
 	exportVars(*debugPort)
 
 	go client.Listen()
+
+	listenForEvents(client, *mode)
 
 	if *mode == "periodic" {
 		doPeriodicMode(es, d, client)
