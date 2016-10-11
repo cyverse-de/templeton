@@ -113,8 +113,6 @@ func spin() {
 func doPeriodicMode(es *elasticsearch.Elasticer, d *database.Databaser, client *messaging.Client) {
 	logcabin.Info.Println("Periodic indexing mode selected.")
 
-	go client.Listen()
-
 	// Accept and handle messages sent out with the index.all and index.templates routing keys
 	client.AddConsumerMulti(
 		amqpExchangeName,
@@ -133,8 +131,6 @@ func doPeriodicMode(es *elasticsearch.Elasticer, d *database.Databaser, client *
 
 func doIncrementalMode(es *elasticsearch.Elasticer, d *database.Databaser, client *messaging.Client) {
 	logcabin.Info.Println("Incremental indexing mode selected.")
-
-	go client.Listen()
 
 	client.AddConsumer(
 		amqpExchangeName,
@@ -228,6 +224,8 @@ func main() {
 	defer client.Close()
 
 	exportVars(*debugPort)
+
+	go client.Listen()
 
 	if *mode == "periodic" {
 		doPeriodicMode(es, d, client)
