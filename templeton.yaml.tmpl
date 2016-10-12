@@ -1,0 +1,22 @@
+{{- with $base := (printf "configs/%s" (env "DE_ENV")) -}}
+{{- if tree (printf "%s/amqp" $base) -}}
+amqp:
+  {{ with $v := (key (printf "%s/amqp/uri" $base)) }}uri: {{ $v }}{{ end }}
+  {{- if tree (printf "%s/amqp/exchange" $base) }}
+  exchange:
+    {{ with $v := (key (printf "%s/amqp/exchange/name" $base)) }}name: {{ $v }}{{ end }}
+    {{ with $v := (key (printf "%s/amqp/exchange/type" $base)) }}type: {{ $v }}{{ end }}
+  {{- end }}
+{{- end }}
+
+{{- if tree (printf "%s/elasticsearch" $base) }}
+elasticsearch:
+  {{ with $v := (key (printf "%s/elasticsearch/base" $base)) }}base: "{{ $v }}"{{ end }}
+  {{ with $v := (key (printf "%s/elasticsearch/data-index" $base)) }}index: "{{ $v }}"{{ end }}
+{{- end }}
+
+{{- if tree (printf "%s/metadata-db" $base) }}
+db:
+  {{ with $v := (key (printf "%s/metadata-db/uri" $base)) }}uri: {{ $v }}{{ end }}
+{{- end }}
+{{- end -}}
