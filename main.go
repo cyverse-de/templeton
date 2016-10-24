@@ -10,10 +10,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cyverse-de/go-events/ping"
 	"github.com/cyverse-de/templeton/database"
 	"github.com/cyverse-de/templeton/elasticsearch"
 	"github.com/cyverse-de/templeton/model"
-	"github.com/johnworth/events/ping"
 
 	"github.com/cyverse-de/configurate"
 	"github.com/cyverse-de/logcabin"
