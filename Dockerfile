@@ -1,4 +1,8 @@
-FROM golang:1.7-alpine
+FROM discoenv/golang-base:master
+
+ENV CONF_TEMPLATE=/go/src/github.com/cyverse-de/templeton/templeton.yaml.tmpl
+ENV CONF_FILENAME=templeton.yaml
+ENV PROGRAM=templeton
 
 ARG git_commit=unknown
 ARG version="2.9.0"
@@ -10,5 +14,3 @@ COPY . /go/src/github.com/cyverse-de/templeton
 RUN go install -v -ldflags "-X main.appver=$version -X main.gitref=$git_commit" github.com/cyverse-de/templeton
 
 EXPOSE 60000
-ENTRYPOINT ["templeton"]
-CMD ["--help"]
