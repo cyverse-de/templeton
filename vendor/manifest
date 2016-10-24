@@ -27,6 +27,15 @@
 			"notests": true
 		},
 		{
+			"importpath": "github.com/cyverse-de/go-events/ping",
+			"repository": "https://github.com/cyverse-de/go-events",
+			"vcs": "git",
+			"revision": "85bdb8d67e312eb3a7a8d0bf1749509d0fd062ea",
+			"branch": "master",
+			"path": "/ping",
+			"notests": true
+		},
+		{
 			"importpath": "github.com/cyverse-de/logcabin",
 			"repository": "https://github.com/cyverse-de/logcabin",
 			"vcs": "git",
@@ -64,6 +73,24 @@
 			"vcs": "git",
 			"revision": "f12c6236fe7b5cf6bcf30e5935d08cb079d78334",
 			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/golang/protobuf/proto",
+			"repository": "https://github.com/golang/protobuf",
+			"vcs": "git",
+			"revision": "df1d3ca07d2d07bba352d5b73c4313b4e2a6203e",
+			"branch": "master",
+			"path": "/proto",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/golang/protobuf/ptypes/any",
+			"repository": "https://github.com/golang/protobuf",
+			"vcs": "git",
+			"revision": "df1d3ca07d2d07bba352d5b73c4313b4e2a6203e",
+			"branch": "master",
+			"path": "ptypes/any",
 			"notests": true
 		},
 		{
