@@ -295,6 +295,24 @@
 			"notests": true
 		},
 		{
+			"importpath": "golang.org/x/net/context",
+			"repository": "https://go.googlesource.com/net",
+			"vcs": "git",
+			"revision": "cbed01e851ceabac8eab72f5e0f1086ecbc60338",
+			"branch": "master",
+			"path": "context",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/sync/errgroup",
+			"repository": "https://go.googlesource.com/sync",
+			"vcs": "git",
+			"revision": "450f422ab23cf9881c94e2db30cac0eb1b7cf80c",
+			"branch": "master",
+			"path": "/errgroup",
+			"notests": true
+		},
+		{
 			"importpath": "golang.org/x/sys/unix",
 			"repository": "https://go.googlesource.com/sys",
 			"vcs": "git",
@@ -366,10 +384,10 @@
 			"notests": true
 		},
 		{
-			"importpath": "gopkg.in/olivere/elastic.v3",
-			"repository": "https://gopkg.in/olivere/elastic.v3",
+			"importpath": "gopkg.in/olivere/elastic.v5",
+			"repository": "https://gopkg.in/olivere/elastic.v5",
 			"vcs": "git",
-			"revision": "787ebbb5a7600662bca364e4e8ca959f315e442f",
+			"revision": "b272fab42387a42585235d56f8c6b53b13ddfb7d",
 			"branch": "master",
 			"notests": true
 		},
