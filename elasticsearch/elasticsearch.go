@@ -2,9 +2,12 @@ package elasticsearch
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/cyverse-de/logcabin"
-	"gopkg.in/olivere/elastic.v3"
+	"gopkg.in/olivere/elastic.v5"
+
+	"golang.org/x/net/context"
 
 	"github.com/cyverse-de/templeton/database"
 	"github.com/cyverse-de/templeton/model"
@@ -63,7 +66,7 @@ func (b *BulkIndexer) Add(r elastic.BulkableRequest) error {
 }
 
 func (b *BulkIndexer) Flush() error {
-	_, err := b.bulkService.Do()
+	_, err := b.bulkService.Do(context.TODO())
 	if err != nil {
 		return err
 	}
@@ -74,14 +77,11 @@ func (b *BulkIndexer) Flush() error {
 }
 
 func (e *Elasticer) PurgeType(d *database.Databaser, indexer *BulkIndexer, t string) error {
-	scanner, err := e.es.Scan(e.index).Type(t).Scroll("1m").Fields("_id").Do()
-	if err != nil {
-		return err
-	}
+	scanner := e.es.Scroll(e.index).Type(t).Scroll("1m")
 
 	for {
-		docs, err := scanner.Next()
-		if err == elastic.EOS {
+		docs, err := scanner.Do(context.TODO())
+		if err == io.EOF {
 			logcabin.Info.Printf("Finished all rows for purge of %s.", t)
 			break
 		}
@@ -177,8 +177,8 @@ func (e *Elasticer) Reindex(d *database.Databaser) {
 
 func (e *Elasticer) DeleteOne(id string) {
 	logcabin.Info.Printf("Deleting metadata for %s", id)
-	_, fileErr := e.es.Delete().Index(e.index).Type("file_metadata").Parent(id).Id(id).Do()
-	_, folderErr := e.es.Delete().Index(e.index).Type("folder_metadata").Parent(id).Id(id).Do()
+	_, fileErr := e.es.Delete().Index(e.index).Type("file_metadata").Parent(id).Id(id).Do(context.TODO())
+	_, folderErr := e.es.Delete().Index(e.index).Type("folder_metadata").Parent(id).Id(id).Do(context.TODO())
 	if fileErr != nil && folderErr != nil {
 		logcabin.Error.Printf("Error deleting file metadata for %s: %s", id, fileErr)
 		logcabin.Error.Printf("Error deleting folder metadata for %s: %s", id, folderErr)
@@ -207,7 +207,7 @@ func (e *Elasticer) IndexOne(d *database.Databaser, id string) {
 	if knownTypes[avus[0].TargetType] {
 		indexed_type := fmt.Sprintf("%s_metadata", avus[0].TargetType)
 		logcabin.Info.Printf("Indexing %s/%s", indexed_type, formatted.ID)
-		_, err = e.es.Index().Index(e.index).Type(indexed_type).Parent(formatted.ID).Id(formatted.ID).BodyJson(formatted).Do()
+		_, err = e.es.Index().Index(e.index).Type(indexed_type).Parent(formatted.ID).Id(formatted.ID).BodyJson(formatted).Do(context.TODO())
 		if err != nil {
 			logcabin.Error.Print(err)
 		}
