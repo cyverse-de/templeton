@@ -9,6 +9,8 @@ import (
 	"github.com/cyverse-de/templeton/model"
 
 	"github.com/cyverse-de/logcabin"
+
+	// Bring in so database/sql works
 	_ "github.com/lib/pq"
 )
 
