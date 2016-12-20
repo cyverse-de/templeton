@@ -157,10 +157,10 @@ func (e *Elasticer) IndexEverything(d *database.Databaser) {
 		}
 
 		if knownTypes[avus[0].TargetType] {
-			indexed_type := fmt.Sprintf("%s_metadata", avus[0].TargetType)
-			logcabin.Info.Printf("Indexing %s/%s", indexed_type, formatted.ID)
+			indexedType := fmt.Sprintf("%s_metadata", avus[0].TargetType)
+			logcabin.Info.Printf("Indexing %s/%s", indexedType, formatted.ID)
 
-			req := elastic.NewBulkIndexRequest().Index(e.index).Type(indexed_type).Parent(formatted.ID).Id(formatted.ID).Doc(formatted)
+			req := elastic.NewBulkIndexRequest().Index(e.index).Type(indexedType).Parent(formatted.ID).Id(formatted.ID).Doc(formatted)
 			err = indexer.Add(req)
 			if err != nil {
 				logcabin.Error.Print(err)
@@ -205,9 +205,9 @@ func (e *Elasticer) IndexOne(d *database.Databaser, id string) {
 	}
 
 	if knownTypes[avus[0].TargetType] {
-		indexed_type := fmt.Sprintf("%s_metadata", avus[0].TargetType)
-		logcabin.Info.Printf("Indexing %s/%s", indexed_type, formatted.ID)
-		_, err = e.es.Index().Index(e.index).Type(indexed_type).Parent(formatted.ID).Id(formatted.ID).BodyJson(formatted).Do(context.TODO())
+		indexedType := fmt.Sprintf("%s_metadata", avus[0].TargetType)
+		logcabin.Info.Printf("Indexing %s/%s", indexedType, formatted.ID)
+		_, err = e.es.Index().Index(e.index).Type(indexedType).Parent(formatted.ID).Id(formatted.ID).BodyJson(formatted).Do(context.TODO())
 		if err != nil {
 			logcabin.Error.Print(err)
 		}
