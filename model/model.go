@@ -30,7 +30,7 @@ type IndexedAVU struct {
 	Unit      string `json:"unit"`
 }
 
-// IndexedObject is a type that contains info as it is sent to and recieved from ES
+// IndexedObject is a type that contains info as it is sent to and received from ES
 type IndexedObject struct {
 	ID       string       `json:"id"`
 	Metadata []IndexedAVU `json:"metadata"`

@@ -121,7 +121,7 @@ func doPeriodicMode(es *elasticsearch.Elasticer, d *database.Databaser, client *
 		"templeton.periodic",
 		[]string{messaging.ReindexAllKey, messaging.ReindexTemplatesKey},
 		func(del amqp.Delivery) {
-			logcabin.Info.Printf("Recieved message: [%s] [%s]", del.RoutingKey, del.Body)
+			logcabin.Info.Printf("Received message: [%s] [%s]", del.RoutingKey, del.Body)
 
 			es.Reindex(d)
 			del.Ack(false)
@@ -139,7 +139,7 @@ func doIncrementalMode(es *elasticsearch.Elasticer, d *database.Databaser, clien
 		"templeton.incremental",
 		messaging.IncrementalKey,
 		func(del amqp.Delivery) {
-			logcabin.Info.Printf("Recieved message: [%s] [%s]", del.RoutingKey, del.Body)
+			logcabin.Info.Printf("Received message: [%s] [%s]", del.RoutingKey, del.Body)
 
 			var m model.UpdateMessage
 			err := json.Unmarshal(del.Body, &m)
