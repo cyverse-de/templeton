@@ -12,7 +12,7 @@ amqp:
 {{- if tree (printf "%s/elasticsearch" $base) }}
 elasticsearch:
   {{ with $v := (key (printf "%s/elasticsearch/base" $base)) }}base: "{{ $v }}"{{ end }}
-  {{ with $v := (key (printf "%s/elasticsearch/data-index" $base)) }}index: "{{ $v }}"{{ end }}
+  {{ with $v := (key (printf "%s/elasticsearch/data-alias" $base)) }}index: "{{ $v }}"{{ end }}
 {{- end }}
 
 {{- if tree (printf "%s/metadata-db" $base) }}
