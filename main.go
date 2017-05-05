@@ -25,6 +25,7 @@ import (
 const defaultConfig = `
 amqp:
   uri: amqp://guest:guest@rabbit:5672/
+  queue_prefix: ""
 
 elasticsearch:
   base: http://elasticsearch:9200
@@ -42,6 +43,7 @@ var (
 	amqpURI            string
 	amqpExchangeName   string
 	amqpExchangeType   string
+	amqpQueuePrefix    string
 	elasticsearchBase  string
 	elasticsearchIndex string
 	dbURI              string
@@ -87,6 +89,7 @@ func loadAMQPConfig() {
 	amqpURI = cfg.GetString("amqp.uri")
 	amqpExchangeName = cfg.GetString("amqp.exchange.name")
 	amqpExchangeType = cfg.GetString("amqp.exchange.type")
+	amqpQueuePrefix = cfg.GetString("amqp.queue_prefix")
 }
 
 func loadDBConfig() {
@@ -111,14 +114,23 @@ func spin() {
 	}
 }
 
+func getQueueName(mode, prefix string) string {
+	queueName := fmt.Sprintf("templeton.%s", mode)
+	if len(prefix) > 0 {
+		queueName = fmt.Sprintf("%s.templeton.%s", prefix, mode)
+	}
+	return queueName
+}
+
 func doPeriodicMode(es *elasticsearch.Elasticer, d *database.Databaser, client *messaging.Client) {
 	logcabin.Info.Println("Periodic indexing mode selected.")
 
+	queueName := getQueueName(*mode, amqpQueuePrefix)
 	// Accept and handle messages sent out with the index.all and index.templates routing keys
 	client.AddConsumerMulti(
 		amqpExchangeName,
 		amqpExchangeType,
-		"templeton.periodic",
+		queueName,
 		[]string{messaging.ReindexAllKey, messaging.ReindexTemplatesKey},
 		func(del amqp.Delivery) {
 			logcabin.Info.Printf("Received message: [%s] [%s]", del.RoutingKey, del.Body)
@@ -133,10 +145,11 @@ func doPeriodicMode(es *elasticsearch.Elasticer, d *database.Databaser, client *
 func doIncrementalMode(es *elasticsearch.Elasticer, d *database.Databaser, client *messaging.Client) {
 	logcabin.Info.Println("Incremental indexing mode selected.")
 
+	queueName := getQueueName(*mode, amqpQueuePrefix)
 	client.AddConsumer(
 		amqpExchangeName,
 		amqpExchangeType,
-		"templeton.incremental",
+		queueName,
 		messaging.IncrementalKey,
 		func(del amqp.Delivery) {
 			logcabin.Info.Printf("Received message: [%s] [%s]", del.RoutingKey, del.Body)
