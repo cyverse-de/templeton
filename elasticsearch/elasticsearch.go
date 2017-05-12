@@ -23,15 +23,17 @@ var (
 
 // Elasticer is a type used to interact with Elasticsearch
 type Elasticer struct {
-	es      *elastic.Client
-	baseURL string
-	index   string
+	es       *elastic.Client
+	baseURL  string
+	user     string
+	password string
+	index    string
 }
 
 // NewElasticer returns a pointer to an Elasticer instance that has already tested its connection
 // by making a WaitForStatus call to the configured Elasticsearch cluster
-func NewElasticer(elasticsearchBase string, elasticsearchIndex string) (*Elasticer, error) {
-	c, err := elastic.NewClient(elastic.SetURL(elasticsearchBase))
+func NewElasticer(elasticsearchBase string, user string, password string, elasticsearchIndex string) (*Elasticer, error) {
+	c, err := elastic.NewClient(elastic.SetURL(elasticsearchBase), elastic.SetBasicAuth(user, password))
 
 	if err != nil {
 		return nil, err
