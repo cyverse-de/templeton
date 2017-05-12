@@ -36,18 +36,20 @@ db:
 `
 
 var (
-	showVersion        = flag.Bool("version", false, "Print version information")
-	mode               = flag.String("mode", "", "One of 'periodic', 'incremental', or 'full'. Required except for --version.")
-	debugPort          = flag.String("debug-port", "60000", "Listen port for requests to /debug/vars.")
-	cfgPath            = flag.String("config", "", "Path to the configuration file. Required except for --version.")
-	amqpURI            string
-	amqpExchangeName   string
-	amqpExchangeType   string
-	amqpQueuePrefix    string
-	elasticsearchBase  string
-	elasticsearchIndex string
-	dbURI              string
-	cfg                *viper.Viper
+	showVersion           = flag.Bool("version", false, "Print version information")
+	mode                  = flag.String("mode", "", "One of 'periodic', 'incremental', or 'full'. Required except for --version.")
+	debugPort             = flag.String("debug-port", "60000", "Listen port for requests to /debug/vars.")
+	cfgPath               = flag.String("config", "", "Path to the configuration file. Required except for --version.")
+	amqpURI               string
+	amqpExchangeName      string
+	amqpExchangeType      string
+	amqpQueuePrefix       string
+	elasticsearchBase     string
+	elasticsearchUser     string
+	elasticsearchPassword string
+	elasticsearchIndex    string
+	dbURI                 string
+	cfg                   *viper.Viper
 )
 
 func init() {
@@ -82,6 +84,8 @@ func initConfig(cfgPath string) {
 
 func loadElasticsearchConfig() {
 	elasticsearchBase = cfg.GetString("elasticsearch.base")
+	elasticsearchUser = cfg.GetString("elasticsearch.user")
+	elasticsearchPassword = cfg.GetString("elasticsearch.password")
 	elasticsearchIndex = cfg.GetString("elasticsearch.index")
 }
 
@@ -257,7 +261,7 @@ func main() {
 
 	initConfig(*cfgPath)
 	loadElasticsearchConfig()
-	es, err := elasticsearch.NewElasticer(elasticsearchBase, elasticsearchIndex)
+	es, err := elasticsearch.NewElasticer(elasticsearchBase, elasticsearchUser, elasticsearchPassword, elasticsearchIndex)
 	if err != nil {
 		logcabin.Error.Fatal(err)
 	}
