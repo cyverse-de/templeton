@@ -33,7 +33,7 @@ type Elasticer struct {
 // NewElasticer returns a pointer to an Elasticer instance that has already tested its connection
 // by making a WaitForStatus call to the configured Elasticsearch cluster
 func NewElasticer(elasticsearchBase string, user string, password string, elasticsearchIndex string) (*Elasticer, error) {
-	c, err := elastic.NewClient(elastic.SetURL(elasticsearchBase), elastic.SetBasicAuth(user, password))
+	c, err := elastic.NewSimpleClient(elastic.SetURL(elasticsearchBase), elastic.SetBasicAuth(user, password))
 
 	if err != nil {
 		return nil, err
