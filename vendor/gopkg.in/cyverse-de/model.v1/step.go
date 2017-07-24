@@ -53,7 +53,13 @@ func (s *Step) EnvOptions() []string {
 func (s *Step) IsBackwardsCompatible() bool {
 	img := s.Component.Container.Image.Name
 	return strings.HasPrefix(img, "discoenv/backwards-compat") ||
-		strings.HasPrefix(img, "gims.iplantcollaborative.org:5000/backwards-compat")
+		strings.HasPrefix(img, "gims.iplantcollaborative.org:5000/backwards-compat") ||
+		strings.HasPrefix(img, "docker.cyverse.org/backwards-compat")
+}
+
+// UsesVolumes returns a boolean value which indicates if a step uses host-mounted volumes
+func (s *Step) UsesVolumes() bool {
+	return s.Component.Container.UsesVolumes()
 }
 
 // Executable returns a string containing the executable path as it gets placed

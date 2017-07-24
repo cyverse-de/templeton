@@ -17,9 +17,9 @@ import (
 
 	"github.com/cyverse-de/configurate"
 	"github.com/cyverse-de/logcabin"
-	"github.com/cyverse-de/messaging"
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
+	"gopkg.in/cyverse-de/messaging.v2"
 )
 
 const defaultConfig = `
