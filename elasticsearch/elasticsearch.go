@@ -5,9 +5,11 @@ import (
 	"io"
 
 	"github.com/cyverse-de/logcabin"
+
+	"github.com/cyverse-de/esutils"
 	"gopkg.in/olivere/elastic.v5"
 
-	"golang.org/x/net/context"
+	"context"
 
 	"github.com/cyverse-de/templeton/database"
 	"github.com/cyverse-de/templeton/model"
@@ -46,39 +48,11 @@ func (e *Elasticer) Close() {
 	e.es.Stop()
 }
 
-type BulkIndexer struct {
-	es          *elastic.Client
-	bulkSize    int
-	bulkService *elastic.BulkService
+func (e *Elasticer) NewBulkIndexer(bulkSize int) *esutils.BulkIndexer {
+	return esutils.NewBulkIndexer(e.es, bulkSize)
 }
 
-func (e *Elasticer) NewBulkIndexer(bulkSize int) *BulkIndexer {
-	return &BulkIndexer{bulkSize: bulkSize, es: e.es, bulkService: e.es.Bulk()}
-}
-
-func (b *BulkIndexer) Add(r elastic.BulkableRequest) error {
-	b.bulkService.Add(r)
-	if b.bulkService.NumberOfActions() >= b.bulkSize {
-		err := b.Flush()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (b *BulkIndexer) Flush() error {
-	_, err := b.bulkService.Do(context.TODO())
-	if err != nil {
-		return err
-	}
-
-	b.bulkService = b.es.Bulk()
-
-	return nil
-}
-
-func (e *Elasticer) PurgeType(d *database.Databaser, indexer *BulkIndexer, t string) error {
+func (e *Elasticer) PurgeType(d *database.Databaser, indexer *esutils.BulkIndexer, t string) error {
 	scanner := e.es.Scroll(e.index).Type(t).Scroll("1m")
 
 	for {

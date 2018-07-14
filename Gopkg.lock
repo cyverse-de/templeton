@@ -7,6 +7,12 @@
   revision = "4b85e07b4aea9377eebe7ce7ee9efff574751ab4"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/cyverse-de/esutils"
+  packages = ["."]
+  revision = "09b6508540fbf2adcc1a6096e6c5a1e2793c7d6c"
+
+[[projects]]
   name = "github.com/cyverse-de/go-events"
   packages = ["ping"]
   revision = "85bdb8d67e312eb3a7a8d0bf1749509d0fd062ea"
@@ -193,6 +199,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d2ef43f11c2bfe976cb8ab30f0e32ee63d37b1f5b8ce04e4a11b8f9cdc8a45b7"
+  inputs-digest = "af733770ae1fa71e8adb99df38a5d958c507e45011934c42936c20c7b5706722"
   solver-name = "gps-cdcl"
   solver-version = 1
