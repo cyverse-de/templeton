@@ -7,7 +7,7 @@ COPY . /go/src/github.com/cyverse-de/templeton
 ENV CGO_ENABLED=0
 RUN go install -v -ldflags "-X main.appver=$version -X main.gitref=$git_commit" github.com/cyverse-de/templeton
 
-ENTRYPOINT ["templeton"}
+ENTRYPOINT ["templeton"]
 
 ARG git_commit=unknown
 ARG version="2.9.0"
