@@ -6,7 +6,8 @@ import (
 )
 
 var (
-	NoAVUs = fmt.Errorf("templeton/model: No AVUs provided to AVUsToIndexedObject")
+	// ErrNoAVUs is thrown when no AVUs are passed to the AVUsToIndexedObject function
+	ErrNoAVUs = fmt.Errorf("templeton/model: No AVUs provided to AVUsToIndexedObject")
 )
 
 // AVURecord is a type that contains info from the avus table
@@ -45,7 +46,7 @@ func avuRecordToIndexedAVU(avu AVURecord) (*IndexedAVU, error) {
 // AVUsToIndexedObject takes []AVURecord and creates a *IndexedObject
 func AVUsToIndexedObject(avus []AVURecord) (*IndexedObject, error) {
 	if len(avus) == 0 {
-		return nil, NoAVUs
+		return nil, ErrNoAVUs
 	}
 	var ias []IndexedAVU
 	for _, avu := range avus {
@@ -59,6 +60,7 @@ func AVUsToIndexedObject(avus []AVURecord) (*IndexedObject, error) {
 	return retval, nil
 }
 
+// UpdateMessage is the format of the AMQP messages we handle
 type UpdateMessage struct {
 	ID     string `json:"entity"`
 	Author string `json:"author"`

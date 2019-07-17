@@ -9,10 +9,11 @@ import (
 	"github.com/cyverse-de/templeton/model"
 
 	"github.com/cyverse-de/logcabin"
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // blank import for driver
 )
 
 var (
+	// EOS == End of stream
 	EOS = errors.New("EOS")
 )
 
