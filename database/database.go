@@ -65,6 +65,7 @@ func avuRecordFromRow(row *sql.Rows) (*model.AVURecord, error) {
 }
 
 const _selectAVU = `
+	WITH RECURSIVE all_avus AS (
 	SELECT cast(id as varchar),
 	       coalesce(attribute, ''),
 	       coalesce(value, ''),
@@ -76,14 +77,29 @@ const _selectAVU = `
 	       created_on,
 	       modified_on
 	  FROM avus
+	  %s
+	UNION ALL
+	SELECT cast(avus.id as varchar),
+	       coalesce(avus.attribute, ''),
+	       coalesce(avus.value, ''),
+	       coalesce(avus.unit, ''),
+	       cast(aa.target_id as varchar),
+	       cast(aa.target_type as varchar),
+	       avus.created_by,
+	       avus.modified_by,
+	       avus.created_on,
+	       avus.modified_on
+	  FROM avus
+	  JOIN all_avus aa ON (avus.target_id = cast(aa.id as uuid) AND avus.target_type = 'avu')
+	) SELECT * from all_avus ORDER BY target_id;
 `
 
 // selectAVUsWhere generates a SELECT FROM avus with a given WHERE clause (or no WHERE, given an empty string)
 func selectAVUsWhere(where string) string {
 	if where != "" {
-		return fmt.Sprintf("%s WHERE %s ORDER BY target_id", _selectAVU, where)
+		return fmt.Sprintf(_selectAVU, fmt.Sprintf("WHERE %s", where))
 	}
-	return fmt.Sprintf("%s ORDER BY target_id", _selectAVU)
+	return fmt.Sprintf(_selectAVU, "")
 }
 
 // GetAVU returns a model.AVURecord from the database
@@ -116,10 +132,10 @@ func (d *Databaser) GetObjectAVUs(uuid string) ([]model.AVURecord, error) {
 	query := selectAVUsWhere("target_id = cast($1 as uuid)")
 
 	rows, err := d.db.Query(query, uuid)
-	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	var retval []model.AVURecord
 	for rows.Next() {
 		ar, err := avuRecordFromRow(rows)
