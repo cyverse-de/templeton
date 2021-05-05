@@ -1,4 +1,4 @@
-FROM golang:1.11-alpine
+FROM golang:1.15-alpine
 
 RUN apk add --no-cache git
 RUN go get -u github.com/jstemmer/go-junit-report
