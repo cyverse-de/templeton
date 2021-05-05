@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: templeton-periodic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      de-app: templeton-periodic
+  template:
+    metadata:
+      labels:
+        de-app: templeton-periodic
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: de-app
+                operator: In
+                values:
+                - templeton-periodic
+            topologyKey: kubernetes.io/hostname
+      restartPolicy: Always
+      volumes:
+        - name: localtime
+          hostPath:
+            path: /etc/localtime
+        - name: timezone
+          configMap:
+            name: timezone
+            items:
+              - key: timezone
+                path: timezone
+        - name: service-configs
+          secret:
+            secretName: service-configs
+            items:
+              - key: templeton.yaml
+                path: templeton-periodic.yaml
+      containers:
+      - name: templeton-periodic
+        image: discoenv/templeton
+        resources:
+          requests:
+            cpu: "5m"
+            memory: "128Mi"
+          limits:
+            cpu: "100m"
+            memory: "256Mi"
+        args:
+          - --mode
+          - periodic
+          - --config
+          - /etc/iplant/de/templeton-periodic.yaml
+        volumeMounts:
+          - name: localtime
+            mountPath: /etc/localtime
+            readOnly: true
+          - name: timezone
+            mountPath: /etc/timezone
+            subPath: timezone
+          - name: service-configs
+            mountPath: /etc/iplant/de
+            readOnly: true
