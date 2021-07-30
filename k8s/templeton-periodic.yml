@@ -41,7 +41,7 @@ spec:
                 path: templeton-periodic.yaml
       containers:
       - name: templeton-periodic
-        image: discoenv/templeton
+        image: harbor.cyverse.org/de/templeton
         resources:
           requests:
             cpu: "5m"

@@ -11,5 +11,5 @@ build:
   tagPolicy:
     gitCommit: {}
   artifacts:
-  - image: discoenv/templeton
+  - image: harbor.cyverse.org/de/templeton
   local: {}

@@ -41,7 +41,7 @@ spec:
                 path: templeton-incremental.yaml
       containers:
       - name: templeton-incremental
-        image: discoenv/templeton
+        image: harbor.cyverse.org/de/templeton
         resources:
           requests:
             cpu: "2m"
