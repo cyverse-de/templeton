@@ -106,10 +106,11 @@ func selectAVUsWhere(where string) string {
 func (d *Databaser) GetAVU(uuid string) (*model.AVURecord, error) {
 	query := selectAVUsWhere("id = cast($1 as uuid)")
 	rows, err := d.db.Query(query, uuid)
-	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+
 	if !rows.Next() {
 		err := rows.Err()
 		if err == nil {

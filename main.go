@@ -107,6 +107,7 @@ func doFullMode(es *elasticsearch.Elasticer, d *database.Databaser) {
 }
 
 // A spinner to keep the program running, since client.Listen() needs to be in a goroutine.
+// nolint
 func spin() {
 	spinner := make(chan int)
 	for {
@@ -140,7 +141,10 @@ func doPeriodicMode(es *elasticsearch.Elasticer, d *database.Databaser, client *
 			logcabin.Info.Printf("Received message: [%s] [%s]", del.RoutingKey, del.Body)
 
 			es.Reindex(d)
-			del.Ack(false)
+			err := del.Ack(false)
+			if err != nil {
+				logcabin.Error.Print(err)
+			}
 		})
 
 	spin()
@@ -162,10 +166,16 @@ func doIncrementalMode(es *elasticsearch.Elasticer, d *database.Databaser, clien
 			err := json.Unmarshal(del.Body, &m)
 			if err != nil {
 				logcabin.Error.Print(err)
-				del.Reject(!del.Redelivered)
+				err = del.Reject(!del.Redelivered)
+				if err != nil {
+					logcabin.Error.Print(err)
+				}
 			}
 			es.IndexOne(d, m.ID)
-			del.Ack(false)
+			err = del.Ack(false)
+			if err != nil {
+				logcabin.Info.Printf("Could not ack message: %s", err.Error())
+			}
 		})
 
 	spin()
@@ -196,7 +206,10 @@ func listenForEvents(client *messaging.Client, mode string) {
 	eventsKey := fmt.Sprintf("events.templeton.%s.#", mode)
 	pingKey := fmt.Sprintf("events.templeton.%s.ping", mode)
 
-	client.SetupPublishing(amqpExchangeName)
+	err := client.SetupPublishing(amqpExchangeName)
+	if err != nil {
+		logcabin.Error.Fatal(err)
+	}
 
 	client.AddConsumer(
 		amqpExchangeName,
@@ -204,7 +217,10 @@ func listenForEvents(client *messaging.Client, mode string) {
 		fmt.Sprintf("events.templeton.%s.queue", mode),
 		eventsKey,
 		func(delivery amqp.Delivery) {
-			delivery.Ack(false)
+			err := delivery.Ack(false)
+			if err != nil {
+				logcabin.Info.Printf("Could not ack message: %s", err.Error())
+			}
 			logcabin.Info.Printf("Received event message: [%s] [%s]", delivery.RoutingKey, delivery.Body)
 			switch delivery.RoutingKey {
 			case pingKey:
@@ -222,7 +238,10 @@ func exportVars(port string) {
 		if err != nil {
 			logcabin.Error.Fatal(err)
 		}
-		http.Serve(sock, nil)
+		err = http.Serve(sock, nil)
+		if err != nil {
+			logcabin.Error.Fatal(err)
+		}
 	}()
 }
 

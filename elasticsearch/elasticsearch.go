@@ -25,11 +25,9 @@ var (
 
 // Elasticer is a type used to interact with Elasticsearch
 type Elasticer struct {
-	es       *elastic.Client
-	baseURL  string
-	user     string
-	password string
-	index    string
+	es      *elastic.Client
+	baseURL string
+	index   string
 }
 
 // NewElasticer returns a pointer to an Elasticer instance that has already tested its connection
@@ -159,7 +157,6 @@ func (e *Elasticer) DeleteOne(id string) {
 		logcabin.Error.Printf("Error deleting file metadata for %s: %s", id, fileErr)
 		logcabin.Error.Printf("Error deleting folder metadata for %s: %s", id, folderErr)
 	}
-	return
 }
 
 // IndexOne takes a database and one ID and reindexes that one entity. It should not die or throw errors.
@@ -188,5 +185,4 @@ func (e *Elasticer) IndexOne(d *database.Databaser, id string) {
 			logcabin.Error.Print(err)
 		}
 	}
-	return
 }
