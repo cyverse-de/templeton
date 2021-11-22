@@ -20,12 +20,13 @@ var (
 // Databaser is a type used to interact with the database.
 type Databaser struct {
 	db         *sql.DB
+	schema     string
 	ConnString string
 }
 
 // NewDatabaser returns a pointer to a Databaser instance that has already
 // connected to the database by calling Ping().
-func NewDatabaser(connString string) (*Databaser, error) {
+func NewDatabaser(connString, schema string) (*Databaser, error) {
 	db, err := sql.Open("postgres", connString)
 	if err != nil {
 		return nil, err
@@ -36,6 +37,7 @@ func NewDatabaser(connString string) (*Databaser, error) {
 	}
 	databaser := &Databaser{
 		db:         db,
+		schema:     schema,
 		ConnString: connString,
 	}
 	return databaser, nil
@@ -76,7 +78,7 @@ const _selectAVU = `
 	       modified_by,
 	       created_on,
 	       modified_on
-	  FROM avus
+	  FROM %s.avus
 	  %s
 	UNION ALL
 	SELECT cast(avus.id as varchar),
@@ -89,22 +91,22 @@ const _selectAVU = `
 	       avus.modified_by,
 	       avus.created_on,
 	       avus.modified_on
-	  FROM avus
+	  FROM %s.avus
 	  JOIN all_avus aa ON (avus.target_id = cast(aa.id as uuid) AND avus.target_type = 'avu')
 	) SELECT * from all_avus ORDER BY target_id;
 `
 
 // selectAVUsWhere generates a SELECT FROM avus with a given WHERE clause (or no WHERE, given an empty string)
-func selectAVUsWhere(where string) string {
+func selectAVUsWhere(schema, where string) string {
 	if where != "" {
-		return fmt.Sprintf(_selectAVU, fmt.Sprintf("WHERE %s", where))
+		return fmt.Sprintf(_selectAVU, schema, fmt.Sprintf("WHERE %s", where), schema)
 	}
-	return fmt.Sprintf(_selectAVU, "")
+	return fmt.Sprintf(_selectAVU, schema, "", schema)
 }
 
 // GetAVU returns a model.AVURecord from the database
 func (d *Databaser) GetAVU(uuid string) (*model.AVURecord, error) {
-	query := selectAVUsWhere("id = cast($1 as uuid)")
+	query := selectAVUsWhere(d.schema, "id = cast($1 as uuid)")
 	rows, err := d.db.Query(query, uuid)
 	if err != nil {
 		return nil, err
@@ -130,7 +132,7 @@ func (d *Databaser) GetAVU(uuid string) (*model.AVURecord, error) {
 
 // GetObjectAVUs returns a slice of model.AVURecord structs by UUID
 func (d *Databaser) GetObjectAVUs(uuid string) ([]model.AVURecord, error) {
-	query := selectAVUsWhere("target_id = cast($1 as uuid)")
+	query := selectAVUsWhere(d.schema, "target_id = cast($1 as uuid)")
 
 	rows, err := d.db.Query(query, uuid)
 	if err != nil {
@@ -210,7 +212,7 @@ func (o *objectCursor) Close() {
 // GetAllObjects returns a function to iterate through individual objects' worth of AVURecords, and a function to clean up
 // The function it returns will return nil if all records have been read.
 func (d *Databaser) GetAllObjects() (*objectCursor, error) {
-	query := selectAVUsWhere("")
+	query := selectAVUsWhere(d.schema, "")
 
 	rows, err := d.db.Query(query)
 	if err != nil {

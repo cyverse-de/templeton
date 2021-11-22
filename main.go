@@ -33,6 +33,7 @@ elasticsearch:
 
 db:
   uri: postgres://de:notprod@dedb:5432/metadata?sslmode=disable
+  schema: public
 `
 
 var (
@@ -49,6 +50,7 @@ var (
 	elasticsearchPassword string
 	elasticsearchIndex    string
 	dbURI                 string
+	dbSchema              string
 	cfg                   *viper.Viper
 )
 
@@ -98,6 +100,7 @@ func loadAMQPConfig() {
 
 func loadDBConfig() {
 	dbURI = cfg.GetString("db.uri")
+	dbSchema = cfg.GetString("db.schema")
 }
 
 func doFullMode(es *elasticsearch.Elasticer, d *database.Databaser) {
@@ -287,7 +290,7 @@ func main() {
 	defer es.Close()
 
 	loadDBConfig()
-	d, err := database.NewDatabaser(dbURI)
+	d, err := database.NewDatabaser(dbURI, dbSchema)
 	if err != nil {
 		logcabin.Error.Fatal(err)
 	}
