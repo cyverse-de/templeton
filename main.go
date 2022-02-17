@@ -57,6 +57,9 @@ var (
 func init() {
 	flag.Parse()
 	logcabin.Init("templeton", "templeton")
+	messaging.Info = logcabin.Info
+	messaging.Warn = logcabin.Warning
+	messaging.Error = logcabin.Error
 }
 
 func checkMode() {
