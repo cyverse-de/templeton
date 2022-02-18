@@ -6,15 +6,17 @@ import (
 
 	"database/sql"
 
+	"github.com/cyverse-de/templeton/logging"
 	"github.com/cyverse-de/templeton/model"
+	"github.com/sirupsen/logrus"
 
-	"github.com/cyverse-de/logcabin"
 	_ "github.com/lib/pq" // blank import for driver
 )
 
 var (
 	// EOS == End of stream
 	EOS = errors.New("EOS")
+	log = logging.Log.WithFields(logrus.Fields{"package": "database"})
 )
 
 // Databaser is a type used to interact with the database.
@@ -199,7 +201,7 @@ func (o *objectCursor) Next() ([]model.AVURecord, error) {
 	}
 	err := o.rows.Err()
 	if err == nil && !o.anyRows {
-		logcabin.Info.Print("No metadata was found in the configured database.")
+		log.Info("No metadata was found in the configured database.")
 		return nil, EOS
 	}
 	return retval, err

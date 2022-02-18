@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/cyverse-de/logcabin"
+	"github.com/sirupsen/logrus"
 
 	"github.com/cyverse-de/esutils"
 	"gopkg.in/olivere/elastic.v5"
@@ -12,6 +12,7 @@ import (
 	"context"
 
 	"github.com/cyverse-de/templeton/database"
+	"github.com/cyverse-de/templeton/logging"
 	"github.com/cyverse-de/templeton/model"
 )
 
@@ -21,6 +22,7 @@ var (
 		"file":   true,
 		"folder": true,
 	}
+	log = logging.Log.WithFields(logrus.Fields{"package": "elasticsearch"})
 )
 
 // Elasticer is a type used to interact with Elasticsearch
@@ -56,7 +58,7 @@ func (e *Elasticer) PurgeType(d *database.Databaser, indexer *esutils.BulkIndexe
 	for {
 		docs, err := scanner.Do(context.TODO())
 		if err == io.EOF {
-			logcabin.Info.Printf("Finished all rows for purge of %s.", t)
+			log.Infof("Finished all rows for purge of %s.", t)
 			break
 		}
 		if err != nil {
@@ -67,15 +69,15 @@ func (e *Elasticer) PurgeType(d *database.Databaser, indexer *esutils.BulkIndexe
 			for _, hit := range docs.Hits.Hits {
 				avus, err := d.GetObjectAVUs(hit.Id)
 				if err != nil {
-					logcabin.Error.Printf("Error processing %s/%s: %s", t, hit.Id, err)
+					log.Errorf("Error processing %s/%s: %s", t, hit.Id, err)
 					continue
 				}
 				if len(avus) == 0 {
-					logcabin.Info.Printf("Deleting %s/%s", t, hit.Id)
+					log.Infof("Deleting %s/%s", t, hit.Id)
 					req := elastic.NewBulkDeleteRequest().Index(e.index).Type(t).Routing(hit.Id).Id(hit.Id)
 					err = indexer.Add(req)
 					if err != nil {
-						logcabin.Error.Printf("Error enqueuing delete of %s/%s: %s", t, hit.Id, err)
+						log.Errorf("Error enqueuing delete of %s/%s: %s", t, hit.Id, err)
 					}
 				}
 			}
@@ -91,13 +93,13 @@ func (e *Elasticer) PurgeIndex(d *database.Databaser) {
 
 	err := e.PurgeType(d, indexer, "file_metadata")
 	if err != nil {
-		logcabin.Error.Fatal(err)
+		log.Fatal(err)
 		return
 	}
 
 	err = e.PurgeType(d, indexer, "folder_metadata")
 	if err != nil {
-		logcabin.Error.Fatal(err)
+		log.Fatal(err)
 		return
 	}
 }
@@ -109,35 +111,35 @@ func (e *Elasticer) IndexEverything(d *database.Databaser) {
 
 	cursor, err := d.GetAllObjects()
 	if err != nil {
-		logcabin.Error.Fatal(err)
+		log.Fatal(err)
 	}
 	defer cursor.Close()
 
 	for {
 		avus, err := cursor.Next()
 		if err == database.EOS {
-			logcabin.Info.Print("Done all rows, finishing.")
+			log.Info("Done all rows, finishing.")
 			break
 		}
 		if err != nil {
-			logcabin.Error.Print(err)
+			log.Error(err)
 			break
 		}
 
 		formatted, err := model.AVUsToIndexedObject(avus)
 		if err != nil {
-			logcabin.Error.Print(err)
+			log.Error(err)
 			break
 		}
 
 		if knownTypes[avus[0].TargetType] {
 			indexedType := fmt.Sprintf("%s_metadata", avus[0].TargetType)
-			logcabin.Info.Printf("Indexing %s/%s", indexedType, formatted.ID)
+			log.Infof("Indexing %s/%s", indexedType, formatted.ID)
 
 			req := elastic.NewBulkIndexRequest().Index(e.index).Type(indexedType).Parent(formatted.ID).Id(formatted.ID).Doc(formatted)
 			err = indexer.Add(req)
 			if err != nil {
-				logcabin.Error.Print(err)
+				log.Error(err)
 				break
 			}
 		}
@@ -150,12 +152,12 @@ func (e *Elasticer) Reindex(d *database.Databaser) {
 }
 
 func (e *Elasticer) DeleteOne(id string) {
-	logcabin.Info.Printf("Deleting metadata for %s", id)
+	log.Infof("Deleting metadata for %s", id)
 	_, fileErr := e.es.Delete().Index(e.index).Type("file_metadata").Parent(id).Id(id).Do(context.TODO())
 	_, folderErr := e.es.Delete().Index(e.index).Type("folder_metadata").Parent(id).Id(id).Do(context.TODO())
 	if fileErr != nil && folderErr != nil {
-		logcabin.Error.Printf("Error deleting file metadata for %s: %s", id, fileErr)
-		logcabin.Error.Printf("Error deleting folder metadata for %s: %s", id, folderErr)
+		log.Errorf("Error deleting file metadata for %s: %s", id, fileErr)
+		log.Errorf("Error deleting folder metadata for %s: %s", id, folderErr)
 	}
 }
 
@@ -163,7 +165,7 @@ func (e *Elasticer) DeleteOne(id string) {
 func (e *Elasticer) IndexOne(d *database.Databaser, id string) {
 	avus, err := d.GetObjectAVUs(id)
 	if err != nil {
-		logcabin.Error.Print(err)
+		log.Error(err)
 		return
 	}
 
@@ -173,16 +175,16 @@ func (e *Elasticer) IndexOne(d *database.Databaser, id string) {
 		return
 	}
 	if err != nil {
-		logcabin.Error.Print(err)
+		log.Error(err)
 		return
 	}
 
 	if knownTypes[avus[0].TargetType] {
 		indexedType := fmt.Sprintf("%s_metadata", avus[0].TargetType)
-		logcabin.Info.Printf("Indexing %s/%s", indexedType, formatted.ID)
+		log.Infof("Indexing %s/%s", indexedType, formatted.ID)
 		_, err = e.es.Index().Index(e.index).Type(indexedType).Parent(formatted.ID).Id(formatted.ID).BodyJson(formatted).Do(context.TODO())
 		if err != nil {
-			logcabin.Error.Print(err)
+			log.Error(err)
 		}
 	}
 }

@@ -6,9 +6,7 @@ require (
 	github.com/cyverse-de/configurate v0.0.0-20160830203814-4b85e07b4aea
 	github.com/cyverse-de/esutils v0.0.0-20180714020110-09b6508540fb
 	github.com/cyverse-de/go-events v0.0.0-20160928194414-85bdb8d67e31
-	github.com/cyverse-de/logcabin v0.0.0-20160721233559-7a3aa5129332
 	github.com/cyverse-de/model v0.0.0-20170711180048-bf8453314372 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.3.2-0.20160816051541-f12c6236fe7b // indirect
 	github.com/golang/protobuf v0.0.0-20160930204858-df1d3ca07d2d // indirect
 	github.com/hashicorp/hcl v0.0.0-20160822214145-baeb59c71071 // indirect
@@ -20,6 +18,7 @@ require (
 	github.com/pelletier/go-toml v0.3.6-0.20160823074707-5a62685873ef // indirect
 	github.com/pkg/errors v0.7.1 // indirect
 	github.com/pkg/sftp v0.0.0-20160721231453-a71e8f580e3b // indirect
+	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/afero v0.0.0-20160821083612-20500e2abd0d // indirect
 	github.com/spf13/cast v0.0.0-20160730092037-e31f36ffc91a // indirect
 	github.com/spf13/jwalterweatherman v0.0.0-20160311093646-33c24e77fb80 // indirect
@@ -29,7 +28,6 @@ require (
 	github.com/stretchr/testify v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20160830154008-b13fc1fd382d // indirect
 	golang.org/x/net v0.0.0-20161208165423-cbed01e851ce // indirect
-	golang.org/x/sys v0.0.0-20160717071931-a646d33e2ee3 // indirect
 	golang.org/x/text v0.0.0-20160816092153-d69c40b4be55 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/cyverse-de/messaging.v2 v2.0.0-20170721171855-79fe2cf2fd16
