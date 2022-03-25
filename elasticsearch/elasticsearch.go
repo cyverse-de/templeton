@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
 
 	"github.com/cyverse-de/esutils"
 	"gopkg.in/olivere/elastic.v5"
@@ -22,7 +23,8 @@ var (
 		"file":   true,
 		"folder": true,
 	}
-	log = logging.Log.WithFields(logrus.Fields{"package": "elasticsearch"})
+	log      = logging.Log.WithFields(logrus.Fields{"package": "elasticsearch"})
+	otelName = "github.com/cyverse-de/templeton/elasticsearch"
 )
 
 // Elasticer is a type used to interact with Elasticsearch
@@ -52,11 +54,14 @@ func (e *Elasticer) NewBulkIndexer(bulkSize int) *esutils.BulkIndexer {
 	return esutils.NewBulkIndexer(e.es, bulkSize)
 }
 
-func (e *Elasticer) PurgeType(d *database.Databaser, indexer *esutils.BulkIndexer, t string) error {
+func (e *Elasticer) PurgeType(context context.Context, d *database.Databaser, indexer *esutils.BulkIndexer, t string) error {
+	ctx, span := otel.Tracer(otelName).Start(context, "PurgeType")
+	defer span.End()
+
 	scanner := e.es.Scroll(e.index).Type(t).Scroll("1m")
 
 	for {
-		docs, err := scanner.Do(context.TODO())
+		docs, err := scanner.Do(ctx)
 		if err == io.EOF {
 			log.Infof("Finished all rows for purge of %s.", t)
 			break
@@ -87,17 +92,20 @@ func (e *Elasticer) PurgeType(d *database.Databaser, indexer *esutils.BulkIndexe
 }
 
 // PurgeIndex walks an index querying a database, deleting those which should not exist
-func (e *Elasticer) PurgeIndex(d *database.Databaser) {
+func (e *Elasticer) PurgeIndex(context context.Context, d *database.Databaser) {
+	ctx, span := otel.Tracer(otelName).Start(context, "PurgeIndex")
+	defer span.End()
+
 	indexer := e.NewBulkIndexer(1000)
 	defer indexer.Flush()
 
-	err := e.PurgeType(d, indexer, "file_metadata")
+	err := e.PurgeType(ctx, d, indexer, "file_metadata")
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
-	err = e.PurgeType(d, indexer, "folder_metadata")
+	err = e.PurgeType(ctx, d, indexer, "folder_metadata")
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -105,7 +113,10 @@ func (e *Elasticer) PurgeIndex(d *database.Databaser) {
 }
 
 // IndexEverything creates a bulk indexer and takes a database, and iterates to index its contents
-func (e *Elasticer) IndexEverything(d *database.Databaser) {
+func (e *Elasticer) IndexEverything(context context.Context, d *database.Databaser) {
+	_, span := otel.Tracer(otelName).Start(context, "IndexEverything")
+	defer span.End()
+
 	indexer := e.NewBulkIndexer(1000)
 	defer indexer.Flush()
 
@@ -146,15 +157,21 @@ func (e *Elasticer) IndexEverything(d *database.Databaser) {
 	}
 }
 
-func (e *Elasticer) Reindex(d *database.Databaser) {
-	e.PurgeIndex(d)
-	e.IndexEverything(d)
+func (e *Elasticer) Reindex(context context.Context, d *database.Databaser) {
+	ctx, span := otel.Tracer(otelName).Start(context, "Reindex")
+	defer span.End()
+
+	e.PurgeIndex(ctx, d)
+	e.IndexEverything(ctx, d)
 }
 
-func (e *Elasticer) DeleteOne(id string) {
+func (e *Elasticer) DeleteOne(context context.Context, id string) {
+	ctx, span := otel.Tracer(otelName).Start(context, "DeleteOne")
+	defer span.End()
+
 	log.Infof("Deleting metadata for %s", id)
-	_, fileErr := e.es.Delete().Index(e.index).Type("file_metadata").Parent(id).Id(id).Do(context.TODO())
-	_, folderErr := e.es.Delete().Index(e.index).Type("folder_metadata").Parent(id).Id(id).Do(context.TODO())
+	_, fileErr := e.es.Delete().Index(e.index).Type("file_metadata").Parent(id).Id(id).Do(ctx)
+	_, folderErr := e.es.Delete().Index(e.index).Type("folder_metadata").Parent(id).Id(id).Do(ctx)
 	if fileErr != nil && folderErr != nil {
 		log.Errorf("Error deleting file metadata for %s: %s", id, fileErr)
 		log.Errorf("Error deleting folder metadata for %s: %s", id, folderErr)
@@ -162,7 +179,10 @@ func (e *Elasticer) DeleteOne(id string) {
 }
 
 // IndexOne takes a database and one ID and reindexes that one entity. It should not die or throw errors.
-func (e *Elasticer) IndexOne(d *database.Databaser, id string) {
+func (e *Elasticer) IndexOne(context context.Context, d *database.Databaser, id string) {
+	ctx, span := otel.Tracer(otelName).Start(context, "IndexOne")
+	defer span.End()
+
 	avus, err := d.GetObjectAVUs(id)
 	if err != nil {
 		log.Error(err)
@@ -171,7 +191,7 @@ func (e *Elasticer) IndexOne(d *database.Databaser, id string) {
 
 	formatted, err := model.AVUsToIndexedObject(avus)
 	if err == model.ErrNoAVUs {
-		e.DeleteOne(id)
+		e.DeleteOne(ctx, id)
 		return
 	}
 	if err != nil {
@@ -182,7 +202,7 @@ func (e *Elasticer) IndexOne(d *database.Databaser, id string) {
 	if knownTypes[avus[0].TargetType] {
 		indexedType := fmt.Sprintf("%s_metadata", avus[0].TargetType)
 		log.Infof("Indexing %s/%s", indexedType, formatted.ID)
-		_, err = e.es.Index().Index(e.index).Type(indexedType).Parent(formatted.ID).Id(formatted.ID).BodyJson(formatted).Do(context.TODO())
+		_, err = e.es.Index().Index(e.index).Type(indexedType).Parent(formatted.ID).Id(formatted.ID).BodyJson(formatted).Do(ctx)
 		if err != nil {
 			log.Error(err)
 		}

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"net"
 	"net/http"
+	"time"
 
 	"encoding/json"
 	_ "expvar"
@@ -18,9 +20,16 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/cyverse-de/configurate"
+	"github.com/cyverse-de/messaging/v9"
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
-	"gopkg.in/cyverse-de/messaging.v2"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/resource"
+	tracesdk "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 )
 
 const defaultConfig = `
@@ -55,12 +64,51 @@ var (
 	dbURI                 string
 	dbSchema              string
 	cfg                   *viper.Viper
+
+	tracerProvider *tracesdk.TracerProvider
 )
 
 var log = logging.Log.WithFields(logrus.Fields{"package": "main"})
 
+func jaegerTracerProvider(url string) (*tracesdk.TracerProvider, error) {
+	// Create the Jaeger exporter
+	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
+	if err != nil {
+		return nil, err
+	}
+
+	tp := tracesdk.NewTracerProvider(
+		tracesdk.WithBatcher(exp),
+		tracesdk.WithResource(resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String("requests"),
+		)),
+	)
+
+	return tp, nil
+}
+
 func init() {
 	flag.Parse()
+
+	logging.SetupLogging(*logLevel)
+
+	otelTracesExporter := os.Getenv("OTEL_TRACES_EXPORTER")
+	if otelTracesExporter == "jaeger" {
+		jaegerEndpoint := os.Getenv("OTEL_EXPORTER_JAEGER_ENDPOINT")
+		if jaegerEndpoint == "" {
+			log.Warn("Jaeger set as OpenTelemetry trace exporter, but no Jaeger endpoint configured.")
+		} else {
+			tp, err := jaegerTracerProvider(jaegerEndpoint)
+			if err != nil {
+				log.Fatal(err)
+			}
+			tracerProvider = tp
+			otel.SetTracerProvider(tp)
+			otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
+		}
+	}
+
 }
 
 func checkMode() {
@@ -110,7 +158,7 @@ func loadDBConfig() {
 func doFullMode(es *elasticsearch.Elasticer, d *database.Databaser) {
 	log.Info("Full indexing mode selected.")
 
-	es.Reindex(d)
+	es.Reindex(context.Background(), d)
 }
 
 // A spinner to keep the program running, since client.Listen() needs to be in a goroutine.
@@ -144,15 +192,16 @@ func doPeriodicMode(es *elasticsearch.Elasticer, d *database.Databaser, client *
 		amqpExchangeType,
 		queueName,
 		[]string{messaging.ReindexAllKey, messaging.ReindexTemplatesKey},
-		func(del amqp.Delivery) {
+		func(context context.Context, del amqp.Delivery) {
 			log.Infof("Received message: [%s] [%s]", del.RoutingKey, del.Body)
 
-			es.Reindex(d)
+			es.Reindex(context, d)
 			err := del.Ack(false)
 			if err != nil {
 				log.Error(err)
 			}
-		})
+		},
+		1)
 
 	spin()
 }
@@ -166,7 +215,7 @@ func doIncrementalMode(es *elasticsearch.Elasticer, d *database.Databaser, clien
 		amqpExchangeType,
 		queueName,
 		messaging.IncrementalKey,
-		func(del amqp.Delivery) {
+		func(context context.Context, del amqp.Delivery) {
 			log.Infof("Received message: [%s] [%s]", del.RoutingKey, del.Body)
 
 			var m model.UpdateMessage
@@ -178,12 +227,13 @@ func doIncrementalMode(es *elasticsearch.Elasticer, d *database.Databaser, clien
 					log.Error(err)
 				}
 			}
-			es.IndexOne(d, m.ID)
+			es.IndexOne(context, d, m.ID)
 			err = del.Ack(false)
 			if err != nil {
 				log.Infof("Could not ack message: %s", err.Error())
 			}
-		})
+		},
+		100)
 
 	spin()
 }
@@ -223,7 +273,7 @@ func listenForEvents(client *messaging.Client, mode string) {
 		amqpExchangeType,
 		fmt.Sprintf("events.templeton.%s.queue", mode),
 		eventsKey,
-		func(delivery amqp.Delivery) {
+		func(context context.Context, delivery amqp.Delivery) {
 			err := delivery.Ack(false)
 			if err != nil {
 				log.Infof("Could not ack message: %s", err.Error())
@@ -236,6 +286,7 @@ func listenForEvents(client *messaging.Client, mode string) {
 				log.Infof("No handler for message: [%s] [%s]", delivery.RoutingKey, delivery.Body)
 			}
 		},
+		100,
 	)
 }
 
@@ -272,7 +323,18 @@ func AppVersion() {
 }
 
 func main() {
-	logging.SetupLogging(*logLevel)
+	if tracerProvider != nil {
+		tracerCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		defer func(tracerContext context.Context) {
+			ctx, cancel := context.WithTimeout(tracerContext, time.Second*5)
+			defer cancel()
+			if err := tracerProvider.Shutdown(ctx); err != nil {
+				log.Fatal(err)
+			}
+		}(tracerCtx)
+	}
 
 	if *showVersion {
 		AppVersion()
