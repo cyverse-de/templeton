@@ -50,8 +50,8 @@ func (e *Elasticer) Close() {
 	e.es.Stop()
 }
 
-func (e *Elasticer) NewBulkIndexer(bulkSize int) *esutils.BulkIndexer {
-	return esutils.NewBulkIndexer(e.es, bulkSize)
+func (e *Elasticer) NewBulkIndexer(context context.Context, bulkSize int) *esutils.BulkIndexer {
+	return esutils.NewBulkIndexerContext(context, e.es, bulkSize)
 }
 
 func (e *Elasticer) PurgeType(context context.Context, d *database.Databaser, indexer *esutils.BulkIndexer, t string) error {
@@ -96,7 +96,7 @@ func (e *Elasticer) PurgeIndex(context context.Context, d *database.Databaser) {
 	ctx, span := otel.Tracer(otelName).Start(context, "PurgeIndex")
 	defer span.End()
 
-	indexer := e.NewBulkIndexer(1000)
+	indexer := e.NewBulkIndexer(ctx, 1000)
 	defer indexer.Flush()
 
 	err := e.PurgeType(ctx, d, indexer, "file_metadata")
@@ -114,10 +114,10 @@ func (e *Elasticer) PurgeIndex(context context.Context, d *database.Databaser) {
 
 // IndexEverything creates a bulk indexer and takes a database, and iterates to index its contents
 func (e *Elasticer) IndexEverything(context context.Context, d *database.Databaser) {
-	_, span := otel.Tracer(otelName).Start(context, "IndexEverything")
+	ctx, span := otel.Tracer(otelName).Start(context, "IndexEverything")
 	defer span.End()
 
-	indexer := e.NewBulkIndexer(1000)
+	indexer := e.NewBulkIndexer(ctx, 1000)
 	defer indexer.Flush()
 
 	cursor, err := d.GetAllObjects()
