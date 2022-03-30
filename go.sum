@@ -104,6 +104,8 @@ github.com/cyverse-de/go-events v0.0.0-20160928194414-85bdb8d67e31 h1:YW5b/FZWu7
 github.com/cyverse-de/go-events v0.0.0-20160928194414-85bdb8d67e31/go.mod h1:Qsyv/PdAW42pa0U/K8c6an6zlExc2tncUGkLiV5dTig=
 github.com/cyverse-de/messaging/v9 v9.1.3 h1:bfLi4ye9h4hgqIA8KhK2rLfqI62PqBHANMMVyoTKuHA=
 github.com/cyverse-de/messaging/v9 v9.1.3/go.mod h1:bGZRCqilJTPBmWrgsyuupi3KRgkjQNs8yYNxZWZh8DI=
+github.com/cyverse-de/messaging/v9 v9.1.4 h1:DRMqWWT6nAGAnCk2Ajcikm13CJimttgQ5ClrvEA5UNw=
+github.com/cyverse-de/messaging/v9 v9.1.4/go.mod h1:bGZRCqilJTPBmWrgsyuupi3KRgkjQNs8yYNxZWZh8DI=
 github.com/cyverse-de/model/v6 v6.0.1 h1:6c0Tkl0hIbaJj7paI872QAPyvX9bhZNH93o37zDZG0s=
 github.com/cyverse-de/model/v6 v6.0.1/go.mod h1:u9qbFn7B6/1HlwwuyVriIxfGy2hh5t9vFB4+k61X7YE=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

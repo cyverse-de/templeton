@@ -6,7 +6,7 @@ require (
 	github.com/cyverse-de/configurate v0.0.0-20190318152107-8f767cb828d9
 	github.com/cyverse-de/esutils v1.0.1
 	github.com/cyverse-de/go-events v0.0.0-20160928194414-85bdb8d67e31
-	github.com/cyverse-de/messaging/v9 v9.1.3
+	github.com/cyverse-de/messaging/v9 v9.1.4
 	github.com/lib/pq v0.0.0-20160806144029-80f8150043c8
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/sirupsen/logrus v1.8.1
