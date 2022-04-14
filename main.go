@@ -5,7 +5,6 @@ import (
 	"flag"
 	"net"
 	"net/http"
-	"time"
 
 	"encoding/json"
 	_ "expvar"
@@ -24,13 +23,10 @@ import (
 	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
 
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
-	"go.opentelemetry.io/otel/propagation"
-	"go.opentelemetry.io/otel/sdk/resource"
-	tracesdk "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+	"github.com/cyverse-de/go-mod/otelutils"
 )
+
+const serviceName = "templeton"
 
 const defaultConfig = `
 amqp:
@@ -64,51 +60,14 @@ var (
 	dbURI                 string
 	dbSchema              string
 	cfg                   *viper.Viper
-
-	tracerProvider *tracesdk.TracerProvider
 )
 
 var log = logging.Log.WithFields(logrus.Fields{"package": "main"})
-
-func jaegerTracerProvider(url string) (*tracesdk.TracerProvider, error) {
-	// Create the Jaeger exporter
-	exp, err := jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(url)))
-	if err != nil {
-		return nil, err
-	}
-
-	tp := tracesdk.NewTracerProvider(
-		tracesdk.WithBatcher(exp),
-		tracesdk.WithResource(resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("templeton"),
-		)),
-	)
-
-	return tp, nil
-}
 
 func init() {
 	flag.Parse()
 
 	logging.SetupLogging(*logLevel)
-
-	otelTracesExporter := os.Getenv("OTEL_TRACES_EXPORTER")
-	if otelTracesExporter == "jaeger" {
-		jaegerEndpoint := os.Getenv("OTEL_EXPORTER_JAEGER_ENDPOINT")
-		if jaegerEndpoint == "" {
-			log.Warn("Jaeger set as OpenTelemetry trace exporter, but no Jaeger endpoint configured.")
-		} else {
-			tp, err := jaegerTracerProvider(jaegerEndpoint)
-			if err != nil {
-				log.Fatal(err)
-			}
-			tracerProvider = tp
-			otel.SetTracerProvider(tp)
-			otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
-		}
-	}
-
 }
 
 func checkMode() {
@@ -175,9 +134,9 @@ func spin() {
 }
 
 func getQueueName(mode, prefix string) string {
-	queueName := fmt.Sprintf("templeton.%s", mode)
+	queueName := fmt.Sprintf("%s.%s", serviceName, mode)
 	if len(prefix) > 0 {
-		queueName = fmt.Sprintf("%s.templeton.%s", prefix, mode)
+		queueName = fmt.Sprintf("%s.%s.%s", prefix, serviceName, mode)
 	}
 	return queueName
 }
@@ -323,18 +282,10 @@ func AppVersion() {
 }
 
 func main() {
-	if tracerProvider != nil {
-		tracerCtx, cancel := context.WithCancel(context.Background())
-		defer cancel()
-
-		defer func(tracerContext context.Context) {
-			ctx, cancel := context.WithTimeout(tracerContext, time.Second*5)
-			defer cancel()
-			if err := tracerProvider.Shutdown(ctx); err != nil {
-				log.Fatal(err)
-			}
-		}(tracerCtx)
-	}
+	var tracerCtx, cancel = context.WithCancel(context.Background())
+	defer cancel()
+	shutdown := otelutils.TracerProviderFromEnv(tracerCtx, serviceName, func(e error) { log.Fatal(e) })
+	defer shutdown()
 
 	if *showVersion {
 		AppVersion()
