@@ -14,6 +14,7 @@ require (
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/viper v1.10.1
 	github.com/streadway/amqp v1.0.1-0.20200716223359-e6b33f460591
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.31.0
 	go.opentelemetry.io/otel v1.6.1
 	golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect

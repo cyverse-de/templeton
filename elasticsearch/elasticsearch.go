@@ -3,8 +3,10 @@ package elasticsearch
 import (
 	"fmt"
 	"io"
+	"net/http"
 
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 
 	"github.com/cyverse-de/esutils"
@@ -27,6 +29,8 @@ var (
 	otelName = "github.com/cyverse-de/templeton/elasticsearch"
 )
 
+var httpClient = http.Client{Transport: otelhttp.NewTransport(http.DefaultTransport)}
+
 // Elasticer is a type used to interact with Elasticsearch
 type Elasticer struct {
 	es      *elastic.Client
@@ -37,7 +41,7 @@ type Elasticer struct {
 // NewElasticer returns a pointer to an Elasticer instance that has already tested its connection
 // by making a WaitForStatus call to the configured Elasticsearch cluster
 func NewElasticer(elasticsearchBase string, user string, password string, elasticsearchIndex string) (*Elasticer, error) {
-	c, err := elastic.NewSimpleClient(elastic.SetURL(elasticsearchBase), elastic.SetBasicAuth(user, password))
+	c, err := elastic.NewSimpleClient(elastic.SetURL(elasticsearchBase), elastic.SetBasicAuth(user, password), elastic.SetHttpClient(&httpClient))
 
 	if err != nil {
 		return nil, err
