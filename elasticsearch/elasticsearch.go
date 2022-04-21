@@ -76,7 +76,7 @@ func (e *Elasticer) PurgeType(context context.Context, d *database.Databaser, in
 
 		if docs.TotalHits() > 0 {
 			for _, hit := range docs.Hits.Hits {
-				avus, err := d.GetObjectAVUs(hit.Id)
+				avus, err := d.GetObjectAVUs(ctx, hit.Id)
 				if err != nil {
 					log.Errorf("Error processing %s/%s: %s", t, hit.Id, err)
 					continue
@@ -124,7 +124,7 @@ func (e *Elasticer) IndexEverything(context context.Context, d *database.Databas
 	indexer := e.NewBulkIndexer(ctx, 1000)
 	defer indexer.Flush()
 
-	cursor, err := d.GetAllObjects()
+	cursor, err := d.GetAllObjects(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -187,7 +187,7 @@ func (e *Elasticer) IndexOne(context context.Context, d *database.Databaser, id 
 	ctx, span := otel.Tracer(otelName).Start(context, "IndexOne")
 	defer span.End()
 
-	avus, err := d.GetObjectAVUs(id)
+	avus, err := d.GetObjectAVUs(ctx, id)
 	if err != nil {
 		log.Error(err)
 		return

@@ -1,11 +1,13 @@
 package database
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"database/sql"
 
+	"github.com/cyverse-de/dbutil"
 	"github.com/cyverse-de/templeton/logging"
 	"github.com/cyverse-de/templeton/model"
 	"github.com/sirupsen/logrus"
@@ -29,14 +31,16 @@ type Databaser struct {
 // NewDatabaser returns a pointer to a Databaser instance that has already
 // connected to the database by calling Ping().
 func NewDatabaser(connString, schema string) (*Databaser, error) {
-	db, err := sql.Open("postgres", connString)
+	connector, err := dbutil.NewDefaultConnector("1m")
 	if err != nil {
 		return nil, err
 	}
-	err = db.Ping()
+
+	db, err := connector.Connect("postgres", connString)
 	if err != nil {
 		return nil, err
 	}
+
 	databaser := &Databaser{
 		db:         db,
 		schema:     schema,
@@ -107,9 +111,9 @@ func selectAVUsWhere(schema, where string) string {
 }
 
 // GetAVU returns a model.AVURecord from the database
-func (d *Databaser) GetAVU(uuid string) (*model.AVURecord, error) {
+func (d *Databaser) GetAVU(ctx context.Context, uuid string) (*model.AVURecord, error) {
 	query := selectAVUsWhere(d.schema, "id = cast($1 as uuid)")
-	rows, err := d.db.Query(query, uuid)
+	rows, err := d.db.QueryContext(ctx, query, uuid)
 	if err != nil {
 		return nil, err
 	}
@@ -133,10 +137,10 @@ func (d *Databaser) GetAVU(uuid string) (*model.AVURecord, error) {
 }
 
 // GetObjectAVUs returns a slice of model.AVURecord structs by UUID
-func (d *Databaser) GetObjectAVUs(uuid string) ([]model.AVURecord, error) {
+func (d *Databaser) GetObjectAVUs(ctx context.Context, uuid string) ([]model.AVURecord, error) {
 	query := selectAVUsWhere(d.schema, "target_id = cast($1 as uuid)")
 
-	rows, err := d.db.Query(query, uuid)
+	rows, err := d.db.QueryContext(ctx, query, uuid)
 	if err != nil {
 		return nil, err
 	}
@@ -213,10 +217,10 @@ func (o *objectCursor) Close() {
 
 // GetAllObjects returns a function to iterate through individual objects' worth of AVURecords, and a function to clean up
 // The function it returns will return nil if all records have been read.
-func (d *Databaser) GetAllObjects() (*objectCursor, error) {
+func (d *Databaser) GetAllObjects(ctx context.Context) (*objectCursor, error) {
 	query := selectAVUsWhere(d.schema, "")
 
-	rows, err := d.db.Query(query)
+	rows, err := d.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
